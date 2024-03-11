@@ -105,6 +105,7 @@ build_docker:
   script:
     - version=$(cat ./tmp/version.txt)
     - echo "$version"
+    - echo "$ENV" > .env
     - docker build -t "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version" -t "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:latest" .
     - docker push "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version"
     - docker push "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:latest"
