@@ -3,8 +3,8 @@ stages:
   - bump_version
   - test
   - docker_build
-  - deploy_dev
-  - deploy_dev_aux
+  - prep_deployment_files
+  - update_branch
 
 print-info:
   stage: setup
@@ -110,8 +110,8 @@ build_docker:
     - docker push "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version"
     - docker push "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:latest"
 
-deploy_dev:
-  stage: deploy_dev
+deployment_files:
+  stage: prep_deployment_files
   image: node:16.15.1-slim
   tags:
     - python
@@ -139,8 +139,8 @@ deploy_dev:
     expire_in: 1 hour
   allow_failure: false
 
-update_dev_branch:
-  stage: deploy_dev_aux
+update_master_branch:
+  stage: update_branch
   image: mrnonz/alpine-git-curl
   tags:
     - python
@@ -148,7 +148,7 @@ update_dev_branch:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "master"'
   dependencies:
     - bump_version
-    - deploy_dev
+    - deployment_files
   script:
     - git remote set-url origin http://${CI_USER}:${CI_PUSH_TOKEN}@git.bepsa.com.py/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}.git
     - git config --local user.email '${GITLAB_USER_EMAIL}'
@@ -161,6 +161,42 @@ update_dev_branch:
     - git commit -m "Version $version"
     - git push -u origin version/"${CI_COMMIT_SHA}":master -o ci.skip
     - git checkout master
+    - git branch -d version/"${CI_COMMIT_SHA}"
+    - echo pushing changes
+  when: on_success
+  allow_failure: false
+
+update_deployment_branch:
+  stage: update_branch
+  image: mrnonz/alpine-git-curl
+  tags:
+    - python
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "master"'
+  dependencies:
+    - deployment_files
+    - bump_version
+  script:
+    - version=$(cat ./app/version.txt)
+    - git clone http://${CI_USER}:${TOKEN_DEPLOYMENT_REPO}@${GIT_SERVER}/deployments/${DEPLOYMENT_REPO}.git
+    - cd ./${DEPLOYMENT_REPO}
+    - git config --local user.email '${GITLAB_USER_EMAIL}'
+    - git config --local user.name '${GITLAB_USER_ID}'
+    - git config --local user.password '${TOKEN_DEPLOYMENT_REPO}'
+    - git checkout -B version/"${CI_COMMIT_SHA}"
+    - git pull origin develop --rebase
+    - mkdir -p ./${PROJECT_NAME}/${SERVICE_TYPE}
+    - cp ../tmp/1_deployment.yml ./${PROJECT_NAME}/${SERVICE_TYPE}/1_deployment.yml
+    - cp ../tmp/2_service.yml ./${PROJECT_NAME}/${SERVICE_TYPE}/2_service.yml
+    - cp ../tmp/3_ingress.yml ./${PROJECT_NAME}/${SERVICE_TYPE}/3_ingress.yml
+    - cp ../tmp/4_hpa.yml ./${PROJECT_NAME}/${SERVICE_TYPE}/4_hpa.yml
+    - git add ./${PROJECT_NAME}/${SERVICE_TYPE}/1_deployment.yml
+    - git add ./${PROJECT_NAME}/${SERVICE_TYPE}/2_service.yml
+    - git add ./${PROJECT_NAME}/${SERVICE_TYPE}/3_ingress.yml
+    - git add ./${PROJECT_NAME}/${SERVICE_TYPE}/4_hpa.yml
+    - git commit -m "Version $version"
+    - git push -u origin version/"${CI_COMMIT_SHA}":develop -o ci.skip
+    - git checkout develop
     - git branch -d version/"${CI_COMMIT_SHA}"
     - echo pushing changes
   when: on_success
