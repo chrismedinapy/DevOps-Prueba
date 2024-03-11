@@ -177,7 +177,7 @@ update_deployment_branch:
     - deployment_files
     - bump_version
   script:
-    - version=$(cat ./app/version.txt)
+    - version=$(cat ./tmp/version.txt)
     - git clone http://${CI_USER}:${TOKEN_DEPLOYMENT_REPO}@${GIT_SERVER}/deployments/${DEPLOYMENT_REPO}.git
     - cd ./${DEPLOYMENT_REPO}
     - git config --local user.email '${GITLAB_USER_EMAIL}'
