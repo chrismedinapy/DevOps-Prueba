@@ -184,7 +184,7 @@ update_deployment_branch:
     - git config --local user.name '${GITLAB_USER_ID}'
     - git config --local user.password '${TOKEN_DEPLOYMENT_REPO}'
     - git checkout -B version/"${CI_COMMIT_SHA}"
-    - git pull origin develop --rebase
+    - git pull origin master --rebase
     - mkdir -p ./${PROJECT_NAME}/${SERVICE_TYPE}
     - cp ../tmp/1_deployment.yml ./${PROJECT_NAME}/${SERVICE_TYPE}/1_deployment.yml
     - cp ../tmp/2_service.yml ./${PROJECT_NAME}/${SERVICE_TYPE}/2_service.yml
@@ -195,8 +195,8 @@ update_deployment_branch:
     - git add ./${PROJECT_NAME}/${SERVICE_TYPE}/3_ingress.yml
     - git add ./${PROJECT_NAME}/${SERVICE_TYPE}/4_hpa.yml
     - git commit -m "Version $version"
-    - git push -u origin version/"${CI_COMMIT_SHA}":develop -o ci.skip
-    - git checkout develop
+    - git push -u origin version/"${CI_COMMIT_SHA}":master -o ci.skip
+    - git checkout master
     - git branch -d version/"${CI_COMMIT_SHA}"
     - echo pushing changes
   when: on_success
