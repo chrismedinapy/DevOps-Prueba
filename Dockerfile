@@ -10,4 +10,7 @@ COPY ./manage.py /app
 COPY ./.env /app
 RUN python manage.py makemigrations
 RUN python manage.py migrate
+RUN useradd --system --no-create-home nagato
+RUN chown -R nagato:nagato /app
+USER nagato
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
