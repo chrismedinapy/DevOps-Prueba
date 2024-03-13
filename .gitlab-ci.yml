@@ -112,7 +112,7 @@ build_docker:
     - docker push "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:latest"
 
 scan_docker:
-  image: docker:dind
+  image: docker:latest
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "master"'
   stage: docker_scan
@@ -120,13 +120,16 @@ scan_docker:
     - python
   dependencies:
     - bump_version
+  before_script:
+    - apk add --update curl
+    - curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- &&
+    - apk del curl &&
+    - rm -rf /var/cache/apk/*
+    - echo "$DOCKER_HUB_PAT" | docker login -u "$DOCKER_HUB_USER" --password-stdin
   script:
     - version=$(cat ./tmp/version.txt)
-    - apk add --update curl
-    - curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- 
-    - docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PAT"
     - docker scout quickview "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version"
-    - docker scout cves "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version"
+    - docker scout cves "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version" --exit-code --only-severity critical,high 
   allow_failure: false
 
 deployment_files:
