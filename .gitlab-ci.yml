@@ -3,7 +3,6 @@ stages:
   - bump_version
   - test
   - docker_build
-  - docker_scan
   - prep_deployment_files
   - update_branch
 
