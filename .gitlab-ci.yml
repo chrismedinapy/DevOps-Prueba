@@ -110,6 +110,20 @@ build_docker:
     - docker push "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version"
     - docker push "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:latest"
 
+scan_docker:
+  image: docker:dind
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "master"'
+  stage: docker_build
+  tags:
+    - python
+  dependencies:
+    - bump_version
+  script:
+    - version=$(cat ./tmp/version.txt)
+    - docker scout quickview "$PRIVATE_CI_REGISTRY/$CI_REGISTRY_USER/$CI_REGISTRY_IMAGE:$version"
+  allow_failure: false
+
 deployment_files:
   stage: prep_deployment_files
   image: node:16.15.1-slim
