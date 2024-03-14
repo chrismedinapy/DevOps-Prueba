@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-demo-devops-python
+  namespace: default
+spec:
+  minReadySeconds: 10
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: deploy-demo-devops-python
+  template:
+    metadata:
+      name: deploy-demo-devops-python
+      labels:
+        app: deploy-demo-devops-python
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      enableServiceLinks: false
+      containers:
+        - image: apolomachine/demo_devops:0.0.6
+          resources:
+            limits:
+              cpu: "800m"
+              memory: "400Mi"
+            requests:
+              cpu: 30m
+              memory: 50Mi
+          name: deploy-demo-devops-python
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: volume-demo-devops-python
+              mountPath: /app/.env
+              subPath: dev-demo-devops-python-env
+      volumes:
+        - name: volume-demo-devops-python
+          secret:
+            secretName: demo-devops-env
