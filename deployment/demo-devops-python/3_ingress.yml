@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-demo-devops-python
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: dev-bops-02.bepsa.com.py
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: service-demo-devops-python
+            port:
+              number: 8000
